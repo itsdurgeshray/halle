@@ -276,73 +276,63 @@
     $('span', pv).textContent = i > 0 ? u.fac + ' ' + ROMAN[i - 1] : '';
     $('span', nx).textContent = i < FAC.length - 1 ? u.fac + ' ' + ROMAN[i + 1] : '';
   }
+  var cov = { a: 0 }, openTl = null;
+  function setCover(a) {
+    cov.a = a;
+    gsap.set(bcover, { rotationY: -a });
+    var reveal = a <= 90 ? 49.5 : Math.max(0, 49.5 - 49.5 * Math.sin((a - 90) * Math.PI / 180));
+    gsap.set('.tome__img', { clipPath: 'inset(0% 0% 0% ' + reveal.toFixed(2) + '%)' });
+    bcover.style.visibility = a >= 179.5 ? 'hidden' : '';
+  }
   function openReader(i) {
     if (busy || !window.gsap) return;
     busy = true; hot(-1);
-    var mob = isMobile(), sp = spines[i], br = sp.getBoundingClientRect();
+    var mob = isMobile(), sp = spines[i];
     fillSpread(i);
+    spines.forEach(function (x) { x.classList.remove('is-taken'); });
+    sp.classList.add('is-taken');
     reader.classList.add('is-open'); reader.setAttribute('aria-hidden', 'false');
     if (lenis) lenis.stop();
-    gsap.set(tome, { opacity: 1, scale: 1, rotationX: 0 });
-    gsap.set(tome, { y: 0, opacity: 0 });
-    gsap.set(bcover, { rotationY: 0, opacity: 1, display: '' });
-    var cr = mob ? tome.getBoundingClientRect() : bcover.getBoundingClientRect();
-    flyer.src = $('img', sp).src;
-    sp.classList.add('is-taken');
-    var fw = cr.height * (br.width / br.height);
-    gsap.set(flyer, { x: br.left, y: br.top, width: br.width, height: br.height, opacity: 1, rotationY: 0, transformOrigin: '100% 50%', transformPerspective: 1800 });
     gsap.set('.reader__nav, .reader__close', { opacity: 0 });
     gsap.set('.pg .page__in > *, .thumbs li', { opacity: 0 });
-    gsap.set('.tome__img', { clipPath: mob ? 'none' : 'inset(0% 0% 0% 49.5%)' });
-    gsap.set('.reader__desk', { scale: 1.12 });
-    var turn = { t: 0 };
-    var tl = gsap.timeline({ onComplete: function () { busy = false; $('.reader__next').focus({ preventScroll: true }); } });
-    tl.to('.reader__backdrop', { opacity: 1, duration: .8, ease: 'power2.out' }, 0)
-      .to('.reader__desk', { scale: 1, duration: 2.4, ease: 'expo.out' }, 0)
-      .to(flyer, { x: cr.left - fw, y: cr.top, width: fw, height: cr.height, duration: 1, ease: 'expo.inOut' }, 0)
-      .add(function () { gsap.set(tome, { opacity: 1 }); gsap.set(bcover, { rotationY: 90 }); }, .98)
-      .to(turn, { t: 1, duration: .95, ease: 'power2.inOut', onUpdate: function () {
-          var a = turn.t * 90;
-          gsap.set(flyer, { rotationY: -a, opacity: a > 80 ? (90 - a) / 10 : 1 });
-          gsap.set(bcover, { rotationY: 90 - a });
-        } }, 1.0)
-      .set(flyer, { opacity: 0 }, 1.96);
+    gsap.set('.reader__desk', { scale: 1.1 });
+    gsap.set(tome, { y: -70, scale: 1.05, rotationX: 0 });
+    if (mob) { bcover.style.visibility = 'hidden'; } else { setCover(0); }
+    var tl = openTl = gsap.timeline({ onComplete: function () { busy = false; openTl = null; $('.reader__next').focus({ preventScroll: true }); } });
+    tl.to('.reader__backdrop', { opacity: 1, duration: .7, ease: 'power2.out' }, 0)
+      .to('.reader__desk', { scale: 1, duration: 2.2, ease: 'expo.out' }, 0)
+      .to(tome, { y: 0, scale: 1, duration: 1.1, ease: 'expo.out' }, .2);
     if (!mob) {
-      var cov = { a: 0 };
-      tl.to(cov, { a: 180, duration: 1.6, ease: 'power2.inOut', onUpdate: function () {
-          gsap.set(bcover, { rotationY: -cov.a, opacity: cov.a > 150 ? (180 - cov.a) / 30 : 1 });
-          var c = 49.5 * Math.max(0, Math.cos(cov.a * Math.PI / 180)); var reveal = cov.a <= 90 ? 49.5 : Math.max(0, 49.5 - 49.5 * Math.sin((cov.a - 90) * Math.PI / 180) - 0);
-          gsap.set('.tome__img', { clipPath: 'inset(0% 0% 0% ' + (cov.a < 90 ? 49.5 : reveal).toFixed(2) + '%)' });
-        } }, 2.15)
-        .to('.thumbs li', { opacity: 1, duration: .5, stagger: .04 }, 3.35)
-        .to('.pg .page__in > *', { opacity: 1, duration: .8, stagger: .05, ease: 'power1.out' }, 3.35)
-        .to('.reader__nav, .reader__close', { opacity: 1, duration: .6 }, 3.6);
+      tl.to(cov, { a: 180, duration: 1.5, ease: 'power2.inOut', onUpdate: function () { setCover(cov.a); } }, 1.05)
+        .to('.thumbs li', { opacity: 1, duration: .45, stagger: .035 }, 2.45)
+        .to('.pg .page__in > *', { opacity: 1, duration: .7, stagger: .05, ease: 'power1.out' }, 2.4)
+        .to('.reader__nav, .reader__close', { opacity: 1, duration: .5 }, 2.7);
     } else {
-      tl.to(bcover, { opacity: 0, duration: .4 }, 2.1)
-        .to('.pg .page__in > *', { opacity: 1, duration: .6, stagger: .04 }, 1.8)
-        .to('.reader__nav, .reader__close', { opacity: 1, duration: .5 }, 2);
+      tl.to('.pg .page__in > *', { opacity: 1, duration: .6, stagger: .04 }, .8)
+        .to('.reader__nav, .reader__close', { opacity: 1, duration: .5 }, 1.1);
     }
   }
   function closeReader() {
-    if (busy || !reader.classList.contains('is-open')) return;
+    if (!reader.classList.contains('is-open')) return;
+    if (openTl) { openTl.progress(1); openTl = null; busy = false; }
+    if (busy) return;
     busy = true;
-    var sp = spines[cur];
-    spines.forEach(function (x) { x.classList.remove('is-taken'); }); sp.classList.add('is-taken');
-    gsap.timeline({ onComplete: function () {
+    var mob = isMobile();
+    var tl = gsap.timeline({ onComplete: function () {
       reader.classList.remove('is-open'); reader.setAttribute('aria-hidden', 'true');
-      spines.forEach(function (x) { x.classList.remove('is-taken'); }); gsap.set(flyer, { opacity: 0, rotationY: 0 });
-      busy = false; if (lenis) lenis.start(); sp.focus({ preventScroll: true });
-    } })
-      .to('.reader__nav, .reader__close, .thumbs li', { opacity: 0, duration: .25 }, 0)
-      .to(tome, { opacity: 0, y: 30, duration: .5, ease: 'power2.in' }, 0)
-      .add(function () {
-        var br = sp.getBoundingClientRect(), tr = tome.getBoundingClientRect();
-        flyer.src = $('img', sp).src;
-        gsap.fromTo(flyer, { x: tr.left + tr.width * .5 - tr.height * .85 * (br.width / br.height), y: tr.top, height: tr.height * .85, width: tr.height * .85 * (br.width / br.height), opacity: 0, rotationY: 0 },
-          { x: br.left, y: br.top, width: br.width, height: br.height, rotationY: 0, opacity: 1, duration: .85, ease: 'expo.inOut' });
-      }, .3)
-      .to('.reader__backdrop', { opacity: 0, duration: .55 }, .75)
-      .to({}, { duration: .45 }, .9);
+      bcover.style.visibility = ''; leaf.style.display = 'none';
+      spines.forEach(function (x) { x.classList.remove('is-taken'); });
+      busy = false; if (lenis) lenis.start(); spines[cur].focus({ preventScroll: true });
+    } });
+    tl.to('.reader__nav, .reader__close, .thumbs li', { opacity: 0, duration: .25 }, 0)
+      .to('.pg .page__in > *', { opacity: 0, duration: .3 }, 0);
+    if (!mob) {
+      tl.add(function () { $('.bcover__latin').textContent = FAC[cur].latin; $('.bcover__roman').textContent = ROMAN[cur]; }, 0)
+        .to(cov, { a: 0, duration: 1.05, ease: 'power2.inOut', onUpdate: function () { setCover(cov.a); } }, .2);
+    }
+    tl.to(tome, { y: -60, scale: 1.04, duration: .55, ease: 'power2.in' }, mob ? .2 : 1.2)
+      .to('.reader__backdrop', { opacity: 0, duration: .5 }, mob ? .45 : 1.45)
+      .to({}, { duration: .15 }, mob ? .8 : 1.8);
   }
   var PAGE = { l: [.065, .022, .429, .797], r: [.506, .022, .42, .797] };
   function pageRect(side) { var t = tome.getBoundingClientRect(), p = PAGE[side]; return { l: p[0] * t.width, t: p[1] * t.height, w: p[2] * t.width, h: p[3] * t.height, tw: t.width, th: t.height }; }
@@ -453,9 +443,21 @@
   var mm = gsap.matchMedia();
 
   /* ------------------------------------------------------------------ I. portal */
-  var facade = $('.portal__facade'), aula = $('.portal__aula img');
+  var facade = $('.portal__facade'), aula = $('.portal__aula img'), fimg = $('.portal__facade img');
+  var cvs = document.createElement('canvas'); cvs.className = 'portal__canvas'; cvs.setAttribute('aria-hidden', 'true');
+  facade.parentNode.insertBefore(cvs, facade);
+  var ctx = cvs.getContext('2d'), inscr = $('.portal__inscr');
+  stage.insertBefore(inscr, facade.nextSibling);
+  root.classList.add('has-canvas');
+  var intro = { z: 1.06 };
+  function sizeCanvas() {
+    var g = stage._g; if (!g) return;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cvs.width = Math.round(g.W * dpr); cvs.height = Math.round(g.H * dpr);
+    cvs._dpr = dpr;
+  }
   gsap.timeline({ delay: .15, defaults: { ease: 'expo.out' } })
-    .fromTo('.portal__facade img', { scale: 1.07, yPercent: 2 }, { scale: 1, yPercent: 0, duration: 2.4 }, 0)
+    .to(intro, { z: 1, duration: 2.4, onUpdate: function () { renderDoor(); } }, 0)
     .to('.portal__title .pw>span', { yPercent: 0, y: 0, duration: 1.6, stagger: .12 }, 0.25)
     .fromTo('.portal__eyebrow', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 1.2 }, 0.6)
     .fromTo('.portal__base', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1.2 }, 0.8);
@@ -464,26 +466,47 @@
   var doorsEl = $('.portal__doors'), leafL = $('.pd--l'), leafR = $('.pd--r');
   function renderDoor() {
     var g = stage._g; if (!g) return;
+    if (!cvs._dpr || cvs.width !== Math.round(g.W * Math.min(window.devicePixelRatio || 1, 2))) sizeCanvas();
     var p = door.p, ease = function (t) { return t * t * (3 - 2 * t); };
-    var s = 1 + 15 * Math.pow(p, 2.3);
+    var s = (1 + 15 * Math.pow(p, 2.3)) * intro.z;
     var shift = (g.H / 2 - (g.ft + g.fh * DOOR.oy)) * ease(Math.min(1, p * 1.6));
     var L = g.W / 2 - g.fw / 2, ox = DOOR.ox * g.fw, oy = DOOR.oy * g.fh;
     var mapX = function (fx) { return L + ox + (fx * g.fw - ox) * s; };
     var mapY = function (fy) { return g.ft + shift + oy + (fy * g.fh - oy) * s; };
     var dx0 = mapX(DOOR.x0), dx1 = mapX(DOOR.x1), dy0 = mapY(DOOR.y0), dy1 = mapY(DOOR.y1);
     var t = Math.max(0, dy0), b = Math.max(0, g.H - dy1), l = Math.max(0, dx0), r = Math.max(0, g.W - dx1);
-    facade.style.transform = 'translate3d(0,' + shift.toFixed(1) + 'px,0) scale(' + s.toFixed(4) + ')';
+    /* facade drawn into a viewport-sized canvas: only the visible part is ever rasterised */
+    var d = cvs._dpr || 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+    if (p < .97 && fimg.complete && fimg.naturalWidth) {
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      var X0 = mapX(0), Y0 = mapY(0), X1 = mapX(1), Y1 = mapY(1);
+      var iw = fimg.naturalWidth, ih = fimg.naturalHeight;
+      var cx0 = Math.max(0, X0), cy0 = Math.max(0, Y0), cx1 = Math.min(g.W, X1), cy1 = Math.min(g.H, Y1);
+      if (cx1 > cx0 && cy1 > cy0) {
+        var sx = (cx0 - X0) / (X1 - X0) * iw, sy = (cy0 - Y0) / (Y1 - Y0) * ih;
+        var sw = (cx1 - cx0) / (X1 - X0) * iw, sh = (cy1 - cy0) / (Y1 - Y0) * ih;
+        ctx.drawImage(fimg, sx, sy, Math.max(1, sw), Math.max(1, sh), cx0 * d, cy0 * d, (cx1 - cx0) * d, (cy1 - cy0) * d);
+      }
+    }
+    if (inscr) {
+      var ix = mapX(.5), iy = mapY(.254), fz = g.fh * .03 * s;
+      inscr.style.transform = 'translate3d(' + ix.toFixed(1) + 'px,' + iy.toFixed(1) + 'px,0) translate(-50%,-50%)';
+      inscr.style.fontSize = fz.toFixed(2) + 'px';
+      inscr.style.opacity = s > 2.2 ? 0 : 1;
+    }
     aulaWrap.style.clipPath = 'inset(' + t.toFixed(1) + 'px ' + r.toFixed(1) + 'px ' + b.toFixed(1) + 'px ' + l.toFixed(1) + 'px)';
     aula.style.transform = 'scale(' + (1.9 - .9 * ease(p)).toFixed(4) + ')';
     aula.style.filter = 'brightness(' + (.34 + .66 * ease(Math.min(1, p * 1.15))).toFixed(3) + ')';
-    facade.style.opacity = p > .97 ? 0 : 1;
     var dp = Math.min(1, p / .17), da = 108 * (1 - Math.pow(1 - dp, 2.2));
     doorsEl.style.left = dx0.toFixed(1) + 'px'; doorsEl.style.top = dy0.toFixed(1) + 'px';
     doorsEl.style.width = (dx1 - dx0).toFixed(1) + 'px'; doorsEl.style.height = (dy1 - dy0).toFixed(1) + 'px';
     leafL.style.transform = 'rotateY(' + da.toFixed(2) + 'deg)'; leafR.style.transform = 'rotateY(' + (-da).toFixed(2) + 'deg)';
-    doorsEl.style.opacity = p > .35 ? Math.max(0, 1 - (p - .35) / .12) : 1;
-    aulaWrap.style.opacity = dp > 0.02 ? 1 : 0;
+    doorsEl.style.visibility = p > .47 ? 'hidden' : 'visible';
+    aulaWrap.style.visibility = dp > 0.02 ? 'visible' : 'hidden';
   }
+  if (!(fimg.complete && fimg.naturalWidth)) fimg.addEventListener('load', function () { renderDoor(); });
   stage._render = renderDoor;
   renderDoor();
   var ptl = gsap.timeline({ scrollTrigger: { trigger: '.portal', start: 'top top', end: 'bottom bottom', scrub: .6, invalidateOnRefresh: true } });
