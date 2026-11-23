@@ -43,6 +43,8 @@
   var ROMAN_L = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', 'xi', 'xii', 'xiii', 'xiv', 'xv', 'xvi', 'xvii', 'xviii'];
 
   var EN = {
+    'fi.c3': 'Teacher training',
+    'fi.c4': 'State examination',
     'be.lede2': 'Find your degree programme in seconds and apply online.',
     'be.p1': 'degree programmes',
     'be.p2': 'faculties',
