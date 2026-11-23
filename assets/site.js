@@ -43,6 +43,15 @@
   var ROMAN_L = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', 'xi', 'xii', 'xiii', 'xiv', 'xv', 'xvi', 'xvii', 'xviii'];
 
   var EN = {
+    'be.lede2': 'Find your degree programme in seconds and apply online.',
+    'be.p1': 'degree programmes',
+    'be.p2': 'faculties',
+    'be.p3': 'partner universities',
+    'be.ft': 'Find your programme',
+    'be.deg': 'Degree',
+    'be.ph': 'Subject or interest, e.g. Biology',
+    'be.go': 'Show matching programmes',
+    'be.tel': 'Student advisory',
     'np.ear1': 'Halle (Saale) edition',
     'np.ear2': 'Since 1502',
     'np.dl': 'News from Martin Luther University Halle-Wittenberg',
@@ -389,7 +398,7 @@
       if (y < lastY - 4 || y < 60) nav.classList.remove('is-hidden');
     }
     lastY = y;
-    if (dock) dock.classList.toggle('is-on', y > window.innerHeight * 2.2 && (document.body.scrollHeight - y - window.innerHeight) > 1400);
+    if (dock) { var gt = document.querySelector('.gate'); dock.classList.toggle('is-on', y > window.innerHeight * 2.2 && (!gt || y < gt.offsetTop - window.innerHeight * .6)); }
     paintWords();
   }
   burger.addEventListener('click', function () {
@@ -449,14 +458,13 @@
   function renderDoor() {
     var g = stage._g; if (!g) return;
     var p = door.p, ease = function (t) { return t * t * (3 - 2 * t); };
-    var s = 1 + 2.6 * Math.pow(p, 1.6);
+    var s = 1 + 15 * Math.pow(p, 2.3);
     var shift = (g.H / 2 - (g.ft + g.fh * DOOR.oy)) * ease(Math.min(1, p * 1.6));
     var L = g.W / 2 - g.fw / 2, ox = DOOR.ox * g.fw, oy = DOOR.oy * g.fh;
     var mapX = function (fx) { return L + ox + (fx * g.fw - ox) * s; };
     var mapY = function (fy) { return g.ft + shift + oy + (fy * g.fh - oy) * s; };
     var dx0 = mapX(DOOR.x0), dx1 = mapX(DOOR.x1), dy0 = mapY(DOOR.y0), dy1 = mapY(DOOR.y1);
-    var e = Math.pow(Math.max(0, (p - .22) / .78), 2.1);
-    var t = dy0 * (1 - e), b = (g.H - dy1) * (1 - e), l = dx0 * (1 - e), r = (g.W - dx1) * (1 - e);
+    var t = Math.max(0, dy0), b = Math.max(0, g.H - dy1), l = Math.max(0, dx0), r = Math.max(0, g.W - dx1);
     facade.style.transform = 'translate3d(0,' + shift.toFixed(1) + 'px,0) scale(' + s.toFixed(4) + ')';
     aulaWrap.style.clipPath = 'inset(' + t.toFixed(1) + 'px ' + r.toFixed(1) + 'px ' + b.toFixed(1) + 'px ' + l.toFixed(1) + 'px)';
     aula.style.transform = 'scale(' + (1.9 - .9 * ease(p)).toFixed(4) + ')';
@@ -466,7 +474,7 @@
     doorsEl.style.left = dx0.toFixed(1) + 'px'; doorsEl.style.top = dy0.toFixed(1) + 'px';
     doorsEl.style.width = (dx1 - dx0).toFixed(1) + 'px'; doorsEl.style.height = (dy1 - dy0).toFixed(1) + 'px';
     leafL.style.transform = 'rotateY(' + da.toFixed(2) + 'deg)'; leafR.style.transform = 'rotateY(' + (-da).toFixed(2) + 'deg)';
-    doorsEl.style.opacity = p > .5 ? Math.max(0, 1 - (p - .5) / .15) : 1;
+    doorsEl.style.opacity = p > .35 ? Math.max(0, 1 - (p - .35) / .12) : 1;
     aulaWrap.style.opacity = dp > 0.02 ? 1 : 0;
   }
   stage._render = renderDoor;
@@ -551,20 +559,25 @@
     var lens = $('.lens', plates[i]);
     if (lens) { lens.classList.add('is-blur'); setTimeout(function () { lens.classList.remove('is-blur'); }, 120); }
   }
-  (function () {
-    var micro = $('.micro'), timer = null, CYCLE = 7000, inView = false, paused = false;
-    micro.style.setProperty('--cycle', CYCLE + 'ms');
-    function go(i) { setArea(i); foci.forEach(function (f) { var bar = $('.foci__bar', f); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; }); arm(); }
-    function arm() { clearTimeout(timer); if (inView && !paused && !isMobile()) timer = setTimeout(function () { go((area + 1) % 4); }, CYCLE); }
+  mm.add('(min-width: 761px)', function () {
+    setArea(0);
+    var SN = [0, 1 / 3, 2 / 3, 1], snapT = null;
+    var st = ScrollTrigger.create({ trigger: '.micro', start: 'top top', end: 'bottom bottom',
+      onUpdate: function (s) { setArea(Math.min(3, Math.round(s.progress * 3))); } });
+    function snap() {
+      var y = lenis ? lenis.scroll : window.scrollY;
+      if (y <= st.start + 2 || y >= st.end - 2) return;
+      var p = (y - st.start) / (st.end - st.start), best = SN.reduce(function (a, c) { return Math.abs(c - p) < Math.abs(a - p) ? c : a; });
+      var ty = st.start + best * (st.end - st.start);
+      if (Math.abs(ty - y) > 4) lenis ? lenis.scrollTo(ty, { duration: .8, easing: function (t) { return 1 - Math.pow(1 - t, 3); } }) : window.scrollTo({ top: ty, behavior: 'smooth' });
+    }
+    var onS = function () { clearTimeout(snapT); snapT = setTimeout(snap, 160); };
+    var unsub = lenis ? lenis.on('scroll', onS) : (window.addEventListener('scroll', onS, { passive: true }), null);
     foci.forEach(function (f, i) {
-      f.addEventListener('click', function () { go(i); });
-      f.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(i); } });
+      f.onclick = function () { var y = st.start + (st.end - st.start) * SN[i]; lenis ? lenis.scrollTo(y, { duration: 1 }) : window.scrollTo({ top: y, behavior: 'smooth' }); };
     });
-    $('.plates').addEventListener('mouseenter', function () { paused = true; micro.classList.add('is-paused'); clearTimeout(timer); });
-    $('.plates').addEventListener('mouseleave', function () { paused = false; micro.classList.remove('is-paused'); go(area); });
-    new IntersectionObserver(function (es) { inView = es[0].isIntersecting; if (inView) go(area < 0 ? 0 : area); else clearTimeout(timer); }, { threshold: .35 }).observe(micro);
-    mm.add('(min-width: 761px)', function () { setArea(0); return function () { plates.forEach(function (p) { p.classList.add('is-on'); }); area = -1; }; });
-  })();
+    return function () { if (typeof unsub === 'function') unsub(); else window.removeEventListener('scroll', onS); plates.forEach(function (p) { p.classList.add('is-on'); }); area = -1; };
+  });
   var lensState = plates.map(function (p, i) {
     var card = $('.plate__card', p), lens = $('.lens', p);
     var s = { card: card, lens: lens, x: .5, y: .5, tx: .5, ty: .5, hover: false, seed: i * 1.7, vis: false };
@@ -577,7 +590,7 @@
   gsap.ticker.add(function (t) {
     lensState.forEach(function (s, i) {
       if (!s.vis || (!isMobile() && i !== area)) return;
-      if (!s.hover) { s.tx = .5 + .3 * Math.sin(t * .23 + s.seed) ; s.ty = .5 + .26 * Math.sin(t * .31 + s.seed * 2.1); }
+      if (!s.hover) { s.tx = .5 + .22 * Math.sin(t * .23 + s.seed); s.ty = .49 + .17 * Math.sin(t * .31 + s.seed * 2.1); }
       s.x += (s.tx - s.x) * .07; s.y += (s.ty - s.y) * .07;
       var w = s.card.clientWidth, h = s.card.clientHeight;
       s.lens.style.transform = 'translate3d(' + (s.x * w).toFixed(1) + 'px,' + (s.y * h).toFixed(1) + 'px,0)';
@@ -600,7 +613,9 @@
     scrollTrigger: { trigger: vista, start: 'top top', end: 'bottom bottom', scrub: .8, invalidateOnRefresh: true, onRefreshInit: sizeVista } });
 
   /* ------------------------------------------------------------------ VIII. globe photo */
-  gsap.fromTo('.world__photo img', { scale: 1.14, yPercent: 4 }, { scale: 1, yPercent: -2, ease: 'none', scrollTrigger: { trigger: '.world', start: 'top bottom', end: 'bottom top', scrub: true } });
+  gsap.fromTo('.world__zoom', { scale: 1.26, yPercent: 2 }, { scale: 1.14, yPercent: 0, ease: 'none', scrollTrigger: { trigger: '.world', start: 'top bottom', end: 'bottom top', scrub: true } });
+
+  ScrollTrigger.create({ trigger: '.world__photo', start: 'top 70%', once: true, onEnter: function () { $('.world').classList.add('is-live'); } });
 
   /* ------------------------------------------------------------------ IX. press */
   gsap.fromTo('.sheet', { rotationX: 24, y: 90, scale: .92 }, { rotationX: 0, y: 0, scale: 1, ease: 'none', scrollTrigger: { trigger: '.press', start: 'top bottom', end: 'top 15%', scrub: .6 } });
