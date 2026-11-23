@@ -165,9 +165,10 @@
   function sizePortal() {
     var W = window.innerWidth, H = window.innerHeight, mob = W < 761;
     var fw = Math.max(W, H * (mob ? 0.6 : 0.7) * 16 / 9), fh = fw * 9 / 16;
-    var minSky = mob ? H * 0.36 : Math.max(120, H * 0.14);
+    var OG = root.classList.contains('og');
+    var minSky = OG ? 64 : (mob ? H * 0.36 : Math.max(120, H * 0.14));
     var ft = Math.max(minSky, H - fh);
-    var navH = mob ? 72 : 92;
+    var navH = OG ? 10 : (mob ? 72 : 92);
     var avail = ft + fh * 0.183 - navH - (mob ? 56 : 48);
     var fs = mob ? Math.min(W * 0.21, avail / 1.75) : Math.min(W * 0.108, avail / 0.84);
     stage.style.setProperty('--ft', ft + 'px');
@@ -283,36 +284,41 @@
     reader.classList.add('is-open'); reader.setAttribute('aria-hidden', 'false');
     if (lenis) lenis.stop();
     gsap.set(tome, { opacity: 1, scale: 1, rotationX: 0 });
+    gsap.set(tome, { y: 0, opacity: 0 });
+    gsap.set(bcover, { rotationY: 0, opacity: 1, display: '' });
     var cr = mob ? tome.getBoundingClientRect() : bcover.getBoundingClientRect();
     flyer.src = $('img', sp).src;
     sp.classList.add('is-taken');
-    var fw = cr.height * (br.width / br.height) * .9;
-    gsap.set(flyer, { x: br.left, y: br.top, width: br.width, height: br.height, opacity: 1, rotationY: 0 });
+    var fw = cr.height * (br.width / br.height);
+    gsap.set(flyer, { x: br.left, y: br.top, width: br.width, height: br.height, opacity: 1, rotationY: 0, transformOrigin: '100% 50%', transformPerspective: 1800 });
     gsap.set('.reader__nav, .reader__close', { opacity: 0 });
     gsap.set('.pg .page__in > *, .thumbs li', { opacity: 0 });
     gsap.set('.tome__img', { clipPath: mob ? 'none' : 'inset(0% 0% 0% 49.5%)' });
-    gsap.set(bcover, { rotationY: 0, opacity: 0, display: '' });
     gsap.set('.reader__desk', { scale: 1.12 });
-    gsap.set(tome, { y: 40, opacity: 0 });
+    var turn = { t: 0 };
     var tl = gsap.timeline({ onComplete: function () { busy = false; $('.reader__next').focus({ preventScroll: true }); } });
     tl.to('.reader__backdrop', { opacity: 1, duration: .8, ease: 'power2.out' }, 0)
       .to('.reader__desk', { scale: 1, duration: 2.4, ease: 'expo.out' }, 0)
-      .to(flyer, { x: cr.left - fw * .15, y: cr.top, width: fw, height: cr.height, duration: 1, ease: 'expo.inOut' }, 0)
-      .to(tome, { y: 0, opacity: 1, duration: .6, ease: 'power2.out' }, .75)
-      .fromTo(bcover, { opacity: 0, rotationY: 70 }, { opacity: 1, rotationY: 0, duration: .7, ease: 'power3.out' }, .85)
-      .to(flyer, { opacity: 0, rotationY: -60, duration: .5, ease: 'power2.in' }, .85);
+      .to(flyer, { x: cr.left - fw, y: cr.top, width: fw, height: cr.height, duration: 1, ease: 'expo.inOut' }, 0)
+      .add(function () { gsap.set(tome, { opacity: 1 }); gsap.set(bcover, { rotationY: 90 }); }, .98)
+      .to(turn, { t: 1, duration: .95, ease: 'power2.inOut', onUpdate: function () {
+          var a = turn.t * 90;
+          gsap.set(flyer, { rotationY: -a, opacity: a > 80 ? (90 - a) / 10 : 1 });
+          gsap.set(bcover, { rotationY: 90 - a });
+        } }, 1.0)
+      .set(flyer, { opacity: 0 }, 1.96);
     if (!mob) {
       var cov = { a: 0 };
       tl.to(cov, { a: 180, duration: 1.6, ease: 'power2.inOut', onUpdate: function () {
           gsap.set(bcover, { rotationY: -cov.a, opacity: cov.a > 150 ? (180 - cov.a) / 30 : 1 });
           var c = 49.5 * Math.max(0, Math.cos(cov.a * Math.PI / 180)); var reveal = cov.a <= 90 ? 49.5 : Math.max(0, 49.5 - 49.5 * Math.sin((cov.a - 90) * Math.PI / 180) - 0);
           gsap.set('.tome__img', { clipPath: 'inset(0% 0% 0% ' + (cov.a < 90 ? 49.5 : reveal).toFixed(2) + '%)' });
-        } }, 1.7)
-        .to('.thumbs li', { opacity: 1, duration: .5, stagger: .04 }, 2.9)
-        .to('.pg .page__in > *', { opacity: 1, duration: .8, stagger: .05, ease: 'power1.out' }, 2.9)
-        .to('.reader__nav, .reader__close', { opacity: 1, duration: .6 }, 3.2);
+        } }, 2.15)
+        .to('.thumbs li', { opacity: 1, duration: .5, stagger: .04 }, 3.35)
+        .to('.pg .page__in > *', { opacity: 1, duration: .8, stagger: .05, ease: 'power1.out' }, 3.35)
+        .to('.reader__nav, .reader__close', { opacity: 1, duration: .6 }, 3.6);
     } else {
-      tl.to(bcover, { opacity: 0, duration: .4 }, 1.6)
+      tl.to(bcover, { opacity: 0, duration: .4 }, 2.1)
         .to('.pg .page__in > *', { opacity: 1, duration: .6, stagger: .04 }, 1.8)
         .to('.reader__nav, .reader__close', { opacity: 1, duration: .5 }, 2);
     }
@@ -321,9 +327,10 @@
     if (busy || !reader.classList.contains('is-open')) return;
     busy = true;
     var sp = spines[cur];
+    spines.forEach(function (x) { x.classList.remove('is-taken'); }); sp.classList.add('is-taken');
     gsap.timeline({ onComplete: function () {
       reader.classList.remove('is-open'); reader.setAttribute('aria-hidden', 'true');
-      sp.classList.remove('is-taken'); gsap.set(flyer, { opacity: 0 });
+      spines.forEach(function (x) { x.classList.remove('is-taken'); }); gsap.set(flyer, { opacity: 0, rotationY: 0 });
       busy = false; if (lenis) lenis.start(); sp.focus({ preventScroll: true });
     } })
       .to('.reader__nav, .reader__close, .thumbs li', { opacity: 0, duration: .25 }, 0)
@@ -331,7 +338,7 @@
       .add(function () {
         var br = sp.getBoundingClientRect(), tr = tome.getBoundingClientRect();
         flyer.src = $('img', sp).src;
-        gsap.fromTo(flyer, { x: tr.left + tr.width * .6, y: tr.top, height: tr.height * .85, width: tr.height * .85 * (br.width / br.height), opacity: 0 },
+        gsap.fromTo(flyer, { x: tr.left + tr.width * .5 - tr.height * .85 * (br.width / br.height), y: tr.top, height: tr.height * .85, width: tr.height * .85 * (br.width / br.height), opacity: 0, rotationY: 0 },
           { x: br.left, y: br.top, width: br.width, height: br.height, rotationY: 0, opacity: 1, duration: .85, ease: 'expo.inOut' });
       }, .3)
       .to('.reader__backdrop', { opacity: 0, duration: .55 }, .75)

@@ -15,7 +15,7 @@ sock.onmessage = e => { const m = JSON.parse(e.data); if (m.id && pend[m.id]) { 
 const send = (method, params = {}) => new Promise(r => { const i = ++id; pend[i] = r; sock.send(JSON.stringify({ id: i, method, params })); });
 await send('Emulation.setDeviceMetricsOverride', { width: cfg.w, height: cfg.h, deviceScaleFactor: 1, mobile: cfg.w < 761 });
 await send('Page.enable'); await send('Runtime.enable');
-await send('Page.navigate', { url: 'http://localhost:5216/?shot=1' });
+await send('Page.navigate', { url: cfg.url || 'http://localhost:5216/?shot=1' });
 await sleep(4000);
 let n = 0;
 for (const js of cfg.steps) {

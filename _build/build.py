@@ -5,6 +5,7 @@ page = open(f'{S}/page.html').read()
 v1 = open(f'{P}/v1.html').read()
 stmt = re.search(r'<!-- II\. STATEMENT -->.*?</section>', v1, re.S).group(0)
 chron = re.search(r'<!-- III\. CHRONIK -->.*?</section>', v1, re.S).group(0)
+chron = chron.replace('<figure class="photo">', '<figure class="print print--photo">')
 page = page.replace('<!--STATEMENT-->', stmt).replace('<!--CHRONIK-->', chron)
 
 books = [  # latin, colour, label colour, width, height
